@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import splu
 
-def FD_BS(S0:float|int = 100, K:float|int= 80, r:int = 0.05, sigma:int=.3, T:int = 1, J:int=100, N:int=10_000,z:int = 4, theta:float|int = 1/2):
+def FD_BS(S0:float|int = 100, K:float|int= 80, r:int = 0.05, sigma:int=.3, T:int = 1, J:int=100, N:int=10_000,z:int = 4, theta:float|int = 1/2, S_max:float=None):
     """
     Finite Difference approximation using Forward Difference, Backward Difference and Crank-Nicolson schemes 
     to solve the Black-Scholes PDE for European Call Options.
@@ -51,13 +51,19 @@ def FD_BS(S0:float|int = 100, K:float|int= 80, r:int = 0.05, sigma:int=.3, T:int
 
     
     #define boundaries for prices
-    S_max = S0*np.exp((r-sigma**2/2)*T + z*sigma*np.sqrt(T))
+    if S_max == None:
+        #setting up the price vector to make sure S0 is included
+        S_max = S0*np.exp((r-sigma**2/2)*T + z*sigma*np.sqrt(T))
+        j0 = max(1, int(round(S0 / (S_max/J)))) #solve for the node of S0 
+        dS = S0 / j0                            #ds = Sj/j so solving with j-th value of S0
+        S_max = J * dS 
+    else:
+        dS = S_max / J   #included for the convergence analysis of space 
+        j0 = int(round(S0 / dS)) 
     S_min = 0
     
     #setting up the price vector to make sure S0 is included
-    j0 = max(1, int(round(S0 / (S_max/J)))) #solve for the node of S0 
-    dS = S0 / j0                            #ds = Sj/j so solving with j-th value of S0
-    S_max = J * dS                          #Smax = J*dS since Smin=0
+                             #Smax = J*dS since Smin=0
     S_vector = np.linspace(S_min, S_max, J+1) #construct the vector with all the prices
     S_interior = S_vector[1:-1]
     
